@@ -8,7 +8,7 @@ declare -A ALIASES=(
     ["ar"]="auto-restart (Restarts the system to apply updates or fix issues) ~/auto/auto-restart.sh"
     ["asl"]="auto-ssl (Renews SSL certificates and reloads Nginx) ~/auto/auto-ssl.sh"
     ["acl"]="auto-clean (Cleans temporary files and frees up disk space) ~/auto/auto-clean.sh"
-    ["adc"]="auto-docker-compose (Builds and starts Docker containers using Compose) ~/auto/auto-docker-compose.sh"
+    ["adc"]="auto-docker-compose (Builds and starts Docker Compose containers) ~/auto/auto-docker-compose.sh"
     ["adk"]="auto-docker (Builds and deploys a Docker container for a project) ~/auto/auto-docker.sh"
     ["ago"]="auto-go (Builds and tests a Go project) ~/auto/auto-go.sh"
     ["alv"]="auto-laravel (Runs common Laravel Artisan commands) ~/auto/auto-laravel.sh"
@@ -18,7 +18,7 @@ declare -A ALIASES=(
 )
 
 echo
-echo "=== Alias Information ==="
+echo "=== Alias Shortcut ==="
 echo
 
 for alias_name in "${!ALIASES[@]}"; do
