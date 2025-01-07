@@ -32,19 +32,20 @@ show_help() {
   exit 0
 }
 
-if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+if [[ "$1" == "ask --help" || "$1" == "ask -h" ]]; then
   show_help
 fi
 
 if [ "$1" == "ask" ]; then
-  if [ -z "$2" ]; then
-    echo "Error: No format specified."
-    echo "Usage: $0 ask <format> <your question>"
-    exit 1
-  fi
+  FORMAT="-shs"
 
-  FORMAT="$2"
-  shift 2
+  if [ -z "$2" ]; then
+    echo "No format specified. Using default format: -shs (one short sentence)."
+    echo "You can specify a format or use --help to see the available formats."
+  else
+    FORMAT="$2"
+    shift 2
+  fi
 
   if [ -z "$1" ]; then
     echo "Error: No question provided."
@@ -80,7 +81,8 @@ if [ "$1" == "ask" ]; then
       PROMPT_SUFFIX="Please answer in a question-and-answer format."
       ;;
     *)
-      PROMPT_SUFFIX="Please answer in one paragraph."
+      echo "Warning: Unknown format '$FORMAT'. Using default format: -shs."
+      PROMPT_SUFFIX="Please answer in one short sentence."
       ;;
   esac
 
@@ -95,6 +97,6 @@ if [ "$1" == "ask" ]; then
 else
   echo "Error: Invalid command."
   echo "Usage: $0 ask <format> <your question>"
-  echo "Use --help for more details."
+  echo "Use ask --help for more details."
   exit 1
 fi
