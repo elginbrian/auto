@@ -2,6 +2,7 @@
 
 declare -A ALIASES=( 
     ["ai"]="auto-info (Displays shortcut info for system commands) ~/auto/auto-info.sh"
+    ["ask"]="auto-gemini (Asks something to Google Gemini) ~/auto/auto-gemini.sh"
     ["au"]="auto-update (Updates system packages and removes unnecessary ones) ~/auto/auto-update.sh"
     ["ac"]="auto-check (Checks system health: disk, memory, and services) ~/auto/auto-check.sh"
     ["ax"]="auto-nginx (Restarts Nginx service to apply changes) ~/auto/auto-nginx.sh"
