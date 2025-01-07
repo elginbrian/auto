@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 CYAN='\033[1;36m'
 YELLOW='\033[1;33m'
@@ -94,27 +94,23 @@ get_summary_from_gemini() {
 }
 
 process_command() {
-  local input="$1"
+  if [ -z "$1" ]; then
+    echo "Usage: asm <question>"
+    exit 1
+  fi
 
-  if [[ "$input" == asm* ]]; then
-    local user_query="${input#asm }"
+  local user_query="$1"
 
-    system_info=$(get_system_info)
+  system_info=$(get_system_info)
 
-    full_prompt="The following system information is available:
+  full_prompt="The following system information is available:
 $system_info
 
 User query: $user_query
 
 Please provide a short summary (1 paragraph) based on the user's query."
 
-    get_summary_from_gemini "$full_prompt"
-  else
-    echo "Error: Invalid command. Use the 'asm' prefix for requests."
-  fi
+  get_summary_from_gemini "$full_prompt"
 }
 
-echo -e "${CYAN}Enter your command:${RESET}"
-read -r user_input
-
-process_command "$user_input"
+process_command "$*"
