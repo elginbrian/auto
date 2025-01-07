@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 CYAN='\033[1;36m'  
 YELLOW='\033[1;33m'  
@@ -18,10 +18,10 @@ fi
 
 get_linux_commands_from_gemini() {
   local question="$1"
-  RESPONSE=$(gemini-cli prompt "$question (please just give me the list of command without any description/comment, between each command use enter so the list is at the bottom)" 2>&1)
+  RESPONSE=$(gemini-cli prompt "$question (please just give me the list of command without any description/comment, between each command use enter so the list is at the bottom, also make sure you only gave commands that are not dangerous)" 2>&1)
 
   if [ $? -eq 0 ] && [ -n "$RESPONSE" ]; then
-    echo "$RESPONSE" | sed '/^\s*$/d' 
+    echo "$RESPONSE" | sed '/^\s*$/d'  
   else
     echo "Error: Unable to get commands or empty response."
   fi
@@ -33,12 +33,12 @@ if [ "$1" == "ash" ]; then
     exit 1
   fi
 
-  QUESTION="${*:2}"
+  QUESTION="${@:2}"
   COMMANDS=$(get_linux_commands_from_gemini "$QUESTION")
   
   if [ -n "$COMMANDS" ]; then
     echo ""
-    echo -e "${CYAN}✨Here are the suggested commands:${RESET}"
+    echo -e "${CYAN}✨Here are the suggested commands from Gemini:${RESET}"
     echo -e "${YELLOW}$COMMANDS${RESET}"
     echo ""
 
@@ -54,6 +54,8 @@ if [ "$1" == "ash" ]; then
     else
       echo "Commands were not run."
     fi
+
+    echo ""
   else
     echo "No commands found for your question or invalid response."
   fi
