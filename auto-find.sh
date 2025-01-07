@@ -29,46 +29,78 @@ interpret_description() {
   fi
 }
 
-find_files() {
-  local search_keyword="$1"
-  echo "Searching for '$search_keyword' in the current directory and subdirectories..."
+get_tree_structure() {
+  local tree_output
+  tree_output=$(tree -C)
 
-  search_results=$(find . -type f -iname "*$search_keyword*" -print)
+  local description="$1"
+  RESPONSE=$(gemini-cli prompt "Based on the following directory structure, provide the 5 most relevant files or directories for the description.
+Description: $description
+Tree Structure: 
+$tree_output" 2>&1)
 
-  if [ -z "$search_results" ]; then
-    echo "No files found matching '$search_keyword'."
-    return
+  if [ $? -eq 0 ] && [ -n "$RESPONSE" ]; then
+    echo "$RESPONSE"
+  else
+    echo "Error: Unable to get relevant files or directories from Gemini."
   fi
-
-  echo "$search_results"
 }
 
-select_file() {
-  local files="$1"
-  
-  selected_item=$(echo "$files" | fzf --preview "cat {}" --height 40% --border)
+select_file_or_directory() {
+  local response="$1"
+  echo -e "${CYAN}✨ Relevant Results from Gemini:${RESET}"
+  echo -e "${YELLOW}$response${RESET}"
 
-  if [ -n "$selected_item" ]; then
-    if [ -d "$selected_item" ]; then
-      echo -e "${CYAN}Navigating to directory: $selected_item${RESET}"
-      cd "$selected_item" || echo "Failed to navigate to $selected_item"
-    elif [ -f "$selected_item" ]; then
-      echo -e "${CYAN}Inspecting file contents of $selected_item:${RESET}"
-      cat "$selected_item" 2>&1 || echo "Error: Failed to read file $selected_item"
+  echo "Select a file or directory to open by number (1-5), or type '?' to inspect them."
 
-      read -p "Do you want to open this file with nano to edit? (yes / no): " edit_choice
-      if [[ "$edit_choice" == "yes" ]]; then
-        echo -e "${CYAN}Opening file with nano: $selected_item${RESET}"
-        nano "$selected_item" || echo "Failed to open $selected_item with nano"
+  read -p "Enter your choice: " choice
+
+  if [[ "$choice" == "?" ]]; then
+    inspect_files "$response"
+  elif [[ "$choice" =~ ^[1-5]$ ]]; then
+    selected_item=$(echo "$response" | sed -n "${choice}p")
+    if [ -n "$selected_item" ]; then
+      if [ -d "$selected_item" ]; then
+        echo -e "${CYAN}Navigating to directory: $selected_item${RESET}"
+        cd "$selected_item" || echo "Failed to navigate to $selected_item"
+      elif [ -f "$selected_item" ]; then
+        echo -e "${CYAN}Inspecting file contents of $selected_item:${RESET}"
+        cat "$selected_item" 2>&1 || echo "Error: Failed to read file $selected_item"
+
+        read -p "Do you want to open this file with nano to edit? (yes / no): " edit_choice
+        if [[ "$edit_choice" == "yes" ]]; then
+          echo -e "${CYAN}Opening file with nano: $selected_item${RESET}"
+          nano "$selected_item" || echo "Failed to open $selected_item with nano"
+        else
+          echo "File not opened."
+        fi
       else
-        echo "File not opened."
+        echo "Invalid path. Either the directory or file doesn't exist."
       fi
     else
-      echo "Invalid path. Either the directory or file doesn't exist."
+      echo "Invalid selection."
     fi
   else
-    echo "No file selected."
+    echo "Invalid choice, please select a number between 1-5 or type '?' to inspect."
   fi
+}
+
+inspect_files() {
+  local response="$1"
+  echo -e "${CYAN}Inspecting contents of the 5 most relevant files or directories...${RESET}"
+
+  while read -r item; do
+    echo -e "${CYAN}Contents of $item:${RESET}"
+    if [ -f "$item" ]; then
+      cat "$item" || echo "Error: Failed to read file $item"
+    elif [ -d "$item" ]; then
+      ls -l "$item" || echo "Error: Failed to list contents of directory $item"
+    fi
+    echo ""
+  done <<< "$response"
+
+  echo "Reanalyzing based on the content of the selected directories/files..."
+  get_tree_structure "$response"
 }
 
 auto_find() {
@@ -78,26 +110,14 @@ auto_find() {
   fi
 
   local search_description="$1"
-  
-  local search_keywords
-  search_keywords=$(interpret_description "$search_description")
-
-  if [ -z "$search_keywords" ]; then
-    echo "Error: No valid search keywords generated from description."
-    exit 1
-  fi
 
   local search_results
-  search_results=$(find_files "$search_keywords")
+  search_results=$(get_tree_structure "$search_description")
 
   if [ -n "$search_results" ]; then
-    echo ""
-    echo -e "${CYAN}✨Search Results:${RESET}"
-    echo -e "${YELLOW}$search_results${RESET}"
-
-    select_file "$search_results"
+    select_file_or_directory "$search_results"
   else
-    echo "No files or directories found matching '$search_keywords'."
+    echo "No relevant files or directories found."
   fi
 }
 
