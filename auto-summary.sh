@@ -56,9 +56,7 @@ get_system_info() {
 
   USER_SESSIONS=$(w)
 
-  RECENT_LOGINS=$(last -n 5)
-
-  echo "Hostname: $HOSTNAME, Kernel: $KERNEL, Uptime: $UPTIME, Public IP: $PUBLIC_IP, Users: $USERS, Current User: $CURRENT_USER, Load Averages: $LOAD_AVERAGES, CPU Load: $CPU_LOAD, CPU Usage: $CPU_USAGE%, RAM Usage: $RAM_USAGE, Swap Usage: $SWAP_USAGE, Disk Usage: $DISK_USAGE, Disk I/O: $DISK_IO, Network Interfaces: $NETWORK_INTERFACE, Docker Containers: $DOCKER_CONTAINERS, Active Ports: $ACTIVE_PORTS, System Processes: $SYSTEM_PROCESSES, CPU Temp: $CPU_TEMP, Firewall Status: $FIREWALL_STATUS, Active User Sessions: $USER_SESSIONS, Recent Logins: $RECENT_LOGINS"
+  echo "Hostname: $HOSTNAME, Kernel: $KERNEL, Uptime: $UPTIME, Public IP: $PUBLIC_IP, Users: $USERS, Current User: $CURRENT_USER, Load Averages: $LOAD_AVERAGES, CPU Load: $CPU_LOAD, CPU Usage: $CPU_USAGE%, RAM Usage: $RAM_USAGE, Swap Usage: $SWAP_USAGE, Disk Usage: $DISK_USAGE, Disk I/O: $DISK_IO, Network Interfaces: $NETWORK_INTERFACE, Docker Containers: $DOCKER_CONTAINERS, Active Ports: $ACTIVE_PORTS, System Processes: $SYSTEM_PROCESSES, CPU Temp: $CPU_TEMP, Firewall Status: $FIREWALL_STATUS, Active User Sessions: $USER_SESSIONS"
 }
 
 get_summary_from_gemini() {
@@ -67,11 +65,13 @@ get_summary_from_gemini() {
 
 $system_info
 
-Please provide a clear and concise summary of the system's status, mentioning any important performance issues, security concerns, or recommendations." 2>&1)
+Please answer in paragraph format and one small paragraph only." 2>&1)
 
   if [ $? -eq 0 ] && [ -n "$RESPONSE" ]; then
+    echo ""
     echo -e "${CYAN}✨ Gemini's System Summary:${RESET}"
     echo -e "${YELLOW}$RESPONSE${RESET}"
+    echo ""
   else
     echo "Error: Unable to retrieve a summary from Gemini."
   fi
