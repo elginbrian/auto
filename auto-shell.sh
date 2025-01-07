@@ -18,7 +18,7 @@ fi
 
 get_linux_commands_from_gemini() {
   local question="$1"
-  RESPONSE=$(gemini-cli prompt "$question (please just give me the list of command without any description/comment, between each command use enter so the list is at the bottom, also make sure you only gave commands that are not dangerous)" 2>&1)
+  RESPONSE=$(gemini-cli prompt "$question (please just give me the list of command without any description/comment, between each command use enter so the list is at the bottom, also make sure you only gave commands that are not dangerous, make sure just give me the list of commands with no formatting or code blocks, just the commands themselves without any language markers or extra comments)" 2>&1)
 
   if [ $? -eq 0 ] && [ -n "$RESPONSE" ]; then
     echo "$RESPONSE" | sed '/^\s*$/d'  
