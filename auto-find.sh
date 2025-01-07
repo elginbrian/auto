@@ -33,14 +33,42 @@ find_files() {
   local search_keyword="$1"
   echo "Searching for '$search_keyword' in the current directory and subdirectories..."
 
-  local ls_results
-  ls_results=$(ls -lR | grep -i "$search_keyword")
+  search_results=$(find . -type f -iname "*$search_keyword*" -print)
 
-  local tree_results
-  tree_results=$(tree -C | grep -i "$search_keyword")
+  if [ -z "$search_results" ]; then
+    echo "No files found matching '$search_keyword'."
+    return
+  fi
 
-  echo "$ls_results"
-  echo "$tree_results"
+  echo "$search_results"
+}
+
+select_file() {
+  local files="$1"
+  
+  selected_item=$(echo "$files" | fzf --preview "cat {}" --height 40% --border)
+
+  if [ -n "$selected_item" ]; then
+    if [ -d "$selected_item" ]; then
+      echo -e "${CYAN}Navigating to directory: $selected_item${RESET}"
+      cd "$selected_item" || echo "Failed to navigate to $selected_item"
+    elif [ -f "$selected_item" ]; then
+      echo -e "${CYAN}Inspecting file contents of $selected_item:${RESET}"
+      cat "$selected_item" 2>&1 || echo "Error: Failed to read file $selected_item"
+
+      read -p "Do you want to open this file with nano to edit? (yes / no): " edit_choice
+      if [[ "$edit_choice" == "yes" ]]; then
+        echo -e "${CYAN}Opening file with nano: $selected_item${RESET}"
+        nano "$selected_item" || echo "Failed to open $selected_item with nano"
+      else
+        echo "File not opened."
+      fi
+    else
+      echo "Invalid path. Either the directory or file doesn't exist."
+    fi
+  else
+    echo "No file selected."
+  fi
 }
 
 auto_find() {
@@ -66,39 +94,8 @@ auto_find() {
     echo ""
     echo -e "${CYAN}✨Search Results:${RESET}"
     echo -e "${YELLOW}$search_results${RESET}"
-    echo ""
 
-    echo "Select a file or directory to open by number:"
-    options=($(echo "$search_results" | nl -v 1))
-    
-    for option in "${options[@]}"; do
-      echo "$option"
-    done
-
-    read -p "Enter the number of the file or directory to open: " choice
-    selected_item=$(echo "$search_results" | sed -n "${choice}p")
-
-    if [ -n "$selected_item" ]; then
-      if [ -d "$selected_item" ]; then
-        echo -e "${CYAN}Navigating to directory: $selected_item${RESET}"
-        cd "$selected_item" || echo "Failed to navigate to $selected_item"
-      elif [ -f "$selected_item" ]; then
-        echo -e "${CYAN}Inspecting file contents of $selected_item:${RESET}"
-        cat "$selected_item" 2>&1 || echo "Error: Failed to read file $selected_item"
-
-        read -p "Do you want to open this file with nano to edit? (yes / no): " edit_choice
-        if [[ "$edit_choice" == "yes" ]]; then
-          echo -e "${CYAN}Opening file with nano: $selected_item${RESET}"
-          nano "$selected_item" || echo "Failed to open $selected_item with nano"
-        else
-          echo "File not opened."
-        fi
-      else
-        echo "Invalid path. Either the directory or file doesn't exist."
-      fi
-    else
-      echo "Invalid selection."
-    fi
+    select_file "$search_results"
   else
     echo "No files or directories found matching '$search_keywords'."
   fi
