@@ -37,7 +37,7 @@ get_system_info() {
   SWAP_USAGE=$(echo $SWAP_INFO | awk '{print $3 "/" $2 " (" $3/$2*100 "% used)"}')
 
   DISK_USAGE=$(df -h --output=source,pcent | grep -E '^/dev/' | awk '{print $1 " " $2}')
-  STORAGE_DETAILS=$(lsblk -o NAME,FSTYPE,SIZE,USED,MOUNTPOINT | grep -E '^(sd|nvme|mmcblk)')
+  STORAGE_DETAILS=$(lsblk -o NAME,FSTYPE,SIZE | grep -E '^(sd|nvme|mmcblk)')
 
   DISK_IO=$(iostat -d 1 2 | grep '^$' -A 1 | tail -n 1)
 
