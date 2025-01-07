@@ -1,5 +1,9 @@
 #!/bin/bash
 
+CYAN='\033[1;36m'  
+YELLOW='\033[1;33m'  
+RESET='\033[0m'     
+
 if ! command -v gemini-cli &> /dev/null; then
   echo "Error: gemini-cli is not installed or not in PATH."
   echo "Please install gemini-cli first using: go install github.com/eliben/gemini-cli@latest"
@@ -22,8 +26,9 @@ if [ "$1" == "ask" ]; then
   
   RESPONSE=$(gemini-cli prompt "$QUESTION" 2>&1)
   if [ $? -eq 0 ]; then
-    echo "Gemini Response:"
-    echo "$RESPONSE"
+    echo ""
+    echo -e "${CYAN}✨Gemini >> ${YELLOW}$RESPONSE${RESET}"
+    echo ""
   else
     echo "Error: $RESPONSE"
   fi
