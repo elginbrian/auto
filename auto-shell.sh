@@ -61,10 +61,10 @@ if [ "$1" == "ash" ]; then
 
     if [ "$CONFIDENCE" -ge 75 ]; then
       echo ""
-      read -p "Do you want to run these commands automatically? (yes, I give my consent / no): " choice
+      read -p "Do you want to run these commands automatically? (yes / no): " choice
       echo ""
 
-      if [[ "$choice" == "yes, I give my consent" ]]; then
+      if [[ "$choice" == "yes" ]]; then
         echo -e "${CYAN}Running the following commands...${RESET}"
         echo "$COMMANDS" | while read -r command; do
           echo "Running: $command"
