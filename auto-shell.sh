@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash  
 
 CYAN='\033[1;36m'  
 YELLOW='\033[1;33m'  
@@ -18,12 +18,25 @@ fi
 
 get_linux_commands_from_gemini() {
   local question="$1"
-  RESPONSE=$(gemini-cli prompt "$question (please just give me the list of command without any description/comment, between each command use enter so the list is at the bottom, also make sure you only gave commands that are not dangerous, make sure just give me the list of commands with no formatting or code blocks, just the commands themselves without any language markers or extra comments)" 2>&1)
+  RESPONSE=$(gemini-cli prompt "$question
+  Provide only a list of Linux commands relevant to the question. Each command should be on a new line, with no comments, explanations, or additional formatting. Do not include code blocks, language markers, or any extra details. Ensure the commands are safe to run." 2>&1)
 
   if [ $? -eq 0 ] && [ -n "$RESPONSE" ]; then
-    echo "$RESPONSE" | sed '/^\s*$/d'  
+    echo "$RESPONSE" | sed '/^\s*$/d' | sed '/^\[.*\]$/d'  
   else
-    echo "Error: Unable to get commands or empty response."
+    echo "Error: Unable to get commands or received an invalid response."
+  fi
+}
+
+get_confidence_from_gemini() {
+  local question="$1"
+  RESPONSE=$(gemini-cli prompt "$question
+  Provide a confidence score (0-100) for how likely these commands are to be safe and effective for the user's question. Return only the score as a number, with no comments or extra formatting." 2>&1)
+
+  if [ $? -eq 0 ] && [ -n "$RESPONSE" ]; then
+    echo "$RESPONSE" | sed '/^\s*$/d' | sed '/^\[.*\]$/d'  
+  else
+    echo "Error: Unable to get confidence score or received an invalid response."
   fi
 }
 
@@ -42,17 +55,26 @@ if [ "$1" == "ash" ]; then
     echo -e "${YELLOW}$COMMANDS${RESET}"
     echo ""
 
-    read -p "Do you want to run these commands? (yes, I gave consent / no): " choice
-    echo ""
+    CONFIDENCE=$(get_confidence_from_gemini "$QUESTION")
 
-    if [[ "$choice" == "yes, I gave consent" ]]; then
-      echo -e "${CYAN}Running the following commands...${RESET}"
-      echo "$COMMANDS" | while read -r command; do
-        echo "Running: $command"
-        eval "$command"
-      done
+    echo -e "${CYAN}💡 Gemini's confidence score for these commands is: $CONFIDENCE%${RESET}"
+
+    if [ "$CONFIDENCE" -ge 70 ]; then
+        echo ""
+      read -p "Do you want to run these commands? (yes, I gave consent / no): " choice
+      echo ""
+
+      if [[ "$choice" == "yes, I gave consent" ]]; then
+        echo -e "${CYAN}Running the following commands...${RESET}"
+        echo "$COMMANDS" | while read -r command; do
+          echo "Running: $command"
+          eval "$command"
+        done
+      else
+        echo "Commands were not run."
+      fi
     else
-      echo "Commands were not run."
+      echo -e "${CYAN}⚠️ The confidence score is low ($CONFIDENCE%). Please verify the commands carefully before running them!${RESET}"
     fi
 
     echo ""
