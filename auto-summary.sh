@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 CYAN='\033[1;36m'
 YELLOW='\033[1;33m'
@@ -16,30 +16,22 @@ if [ -z "$GEMINI_API_KEY" ]; then
   exit 1
 fi
 
-get_system_info() { 
+get_system_info() {
   HOSTNAME=$(hostname)
   KERNEL=$(uname -r)
   UPTIME=$(uptime -p)
   LAST_REBOOT=$(who -b | awk '{print $3, $4}')
-  PUBLIC_IP=$(curl -s ifconfig.me)
+  PUBLIC_IP=$(curl -s ifconfig.me || echo "Unavailable")
   USERS=$(who | wc -l)
   CURRENT_USER=$(whoami)
   ARCHITECTURE=$(uname -m)
-
   LOAD_AVERAGES=$(uptime | awk -F'load average:' '{ print $2 }')
 
-  CPU_LOAD=$(top -bn1 | grep "load average:" | sed "s/.*, *\([0-9.]*\), *\([0-9.]*\), *\([0-9.]*\).*/\1, \2, \3/")
-  CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')
-
-  MEM_INFO=$(free -h | grep Mem)
-  RAM_USAGE=$(echo $MEM_INFO | awk '{print $3 "/" $2 " (" $3/$2*100 "% used)"}')
-  SWAP_INFO=$(free -h | grep Swap)
-  SWAP_USAGE=$(echo $SWAP_INFO | awk '{print $3 "/" $2 " (" $3/$2*100 "% used)"}')
-
-  DISK_USAGE=$(df -h --output=source,pcent | grep -E '^/dev/' | awk '{print $1 " " $2}')
-  STORAGE_DETAILS=$(lsblk -o NAME,FSTYPE,SIZE | grep -E '^(sd|nvme|mmcblk)')
-
-  DISK_IO=$(iostat -d 1 2 | grep '^$' -A 1 | tail -n 1)
+  CPU_USAGE=$(top -bn1 | awk '/Cpu\(s\)/ {usage=100-$8; printf "%.2f", usage}')
+  MEM_INFO=$(free -h | awk '/Mem:/ {print $3 "/" $2 " (" $3/$2*100 "% used)"}')
+  SWAP_INFO=$(free -h | awk '/Swap:/ {if ($2 > 0) print $3 "/" $2 " (" $3/$2*100 "% used)"; else print "No Swap"}')
+  DISK_USAGE=$(df -h --output=source,pcent | awk '/^\/dev/ {print $1 " " $2}')
+  STORAGE_DETAILS=$(lsblk -o NAME,FSTYPE,SIZE | grep -E '^(sd|nvme)')
 
   if command -v lspci &> /dev/null; then
     GPU_INFO=$(lspci | grep -i 'vga\|3d\|2d' | awk -F ': ' '{print $2}')
@@ -50,33 +42,16 @@ get_system_info() {
   fi
 
   NETWORK_INTERFACE=$(ip -o -4 addr show | awk '{print $2, $4}')
-  
-  if command -v speedtest-cli &> /dev/null; then
-    NETWORK_SPEED=$(speedtest-cli --simple | grep -E 'Download|Upload')
-  else
-    NETWORK_SPEED="Network speed test unavailable."
-  fi
-
-  DOCKER_CONTAINERS=$(docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}")
-
-  ACTIVE_PORTS=$(netstat -tuln | awk '{print $4}' | grep -Eo '[0-9]+$' | sort | uniq)
-
+  NETWORK_SPEED=$(command -v speedtest-cli &> /dev/null && speedtest-cli --simple | grep -E 'Download|Upload' || echo "Network speed test unavailable.")
+  DOCKER_CONTAINERS=$(docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | column -t || echo "No Docker containers running.")
+  ACTIVE_PORTS=$(netstat -tuln | awk '{print $4}' | grep -Eo '[0-9]+$' | sort -n | uniq || echo "No active ports.")
   SYSTEM_PROCESSES=$(ps aux --sort=-%cpu | head -n 10)
   MEMORY_PROCESSES=$(ps aux --sort=-%mem | head -n 5)
+  CPU_TEMP=$(command -v sensors &> /dev/null && sensors | awk '/Core 0/ {print $3}' || echo "Temperature data unavailable.")
+  FIREWALL_STATUS=$(ufw status verbose 2>/dev/null || echo "Firewall not configured.")
+  TOTAL_PACKAGES=$(dpkg -l 2>/dev/null | wc -l || echo "Package count unavailable.")
 
-  if command -v sensors &> /dev/null; then
-    CPU_TEMP=$(sensors | grep 'Core 0' | awk '{print $3}')
-  else
-    CPU_TEMP="Temperature data unavailable."
-  fi
-
-  FIREWALL_STATUS=$(ufw status verbose || echo "Firewall not configured")
-
-  USER_SESSIONS=$(w)
-
-  TOTAL_PACKAGES=$(dpkg -l | wc -l)
-
-  echo "Hostname: $HOSTNAME, Kernel: $KERNEL, Uptime: $UPTIME, Last Reboot: $LAST_REBOOT, Public IP: $PUBLIC_IP, Users: $USERS, Current User: $CURRENT_USER, Architecture: $ARCHITECTURE, Load Averages: $LOAD_AVERAGES, CPU Load: $CPU_LOAD, CPU Usage: $CPU_USAGE%, RAM Usage: $RAM_USAGE, Swap Usage: $SWAP_USAGE, Disk Usage: $DISK_USAGE, Disk I/O: $DISK_IO, Storage Details: $STORAGE_DETAILS, GPU Info: $GPU_INFO, Network Interfaces: $NETWORK_INTERFACE, Network Speed: $NETWORK_SPEED, Docker Containers: $DOCKER_CONTAINERS, Active Ports: $ACTIVE_PORTS, System Processes: $SYSTEM_PROCESSES, Top Memory-Consuming Processes: $MEMORY_PROCESSES, CPU Temp: $CPU_TEMP, Firewall Status: $FIREWALL_STATUS, Active User Sessions: $USER_SESSIONS, Total Installed Packages: $TOTAL_PACKAGES"
+  echo -e "Hostname: $HOSTNAME\nKernel: $KERNEL\nUptime: $UPTIME\nLast Reboot: $LAST_REBOOT\nPublic IP: $PUBLIC_IP\nUsers: $USERS\nCurrent User: $CURRENT_USER\nArchitecture: $ARCHITECTURE\nLoad Averages: $LOAD_AVERAGES\nCPU Usage: $CPU_USAGE%\nRAM Usage: $MEM_INFO\nSwap Usage: $SWAP_INFO\nDisk Usage: $DISK_USAGE\nStorage Details: $STORAGE_DETAILS\nGPU Info: $GPU_INFO\nNetwork Interfaces: $NETWORK_INTERFACE\nNetwork Speed: $NETWORK_SPEED\nDocker Containers:\n$DOCKER_CONTAINERS\nActive Ports: $ACTIVE_PORTS\nTop Processes:\n$SYSTEM_PROCESSES\nTop Memory-Consuming Processes:\n$MEMORY_PROCESSES\nCPU Temp: $CPU_TEMP\nFirewall Status: $FIREWALL_STATUS\nTotal Installed Packages: $TOTAL_PACKAGES"
 }
 
 get_summary_from_gemini() {
@@ -84,10 +59,8 @@ get_summary_from_gemini() {
   RESPONSE=$(gemini-cli prompt "$prompt" 2>&1)
 
   if [ $? -eq 0 ] && [ -n "$RESPONSE" ]; then
-    echo ""
     echo -e "${CYAN}✨ Gemini's System Summary:${RESET}"
     echo -e "${YELLOW}$RESPONSE${RESET}"
-    echo ""
   else
     echo "Error: Unable to retrieve a summary from Gemini."
   fi
@@ -103,14 +76,9 @@ process_command() {
 
   system_info=$(get_system_info)
 
-  full_prompt="The following system information is available:
-$system_info
-
-User query: $user_query
-
-Please provide a short summary (1 paragraph) based on the user's query."
+  full_prompt="The following system information is available:\n$system_info\n\nUser query: $user_query\n\nPlease provide a short summary (1 paragraph) based on the user's query."
 
   get_summary_from_gemini "$full_prompt"
 }
 
-process_command "$*"
+process_command "$@"
