@@ -24,7 +24,7 @@ if [ "$1" == "ask" ]; then
 
   QUESTION="${*:2}"
   
-  RESPONSE=$(gemini-cli prompt "$QUESTION" 2>&1)
+  RESPONSE=$(gemini-cli prompt "$QUESTION (please answer as short as possible and in paragraph format)" 2>&1)
   if [ $? -eq 0 ]; then
     echo ""
     echo -e "${CYAN}✨Gemini >> ${YELLOW}$RESPONSE${RESET}"
