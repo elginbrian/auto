@@ -17,39 +17,41 @@ if [ -z "$GEMINI_API_KEY" ]; then
 fi
 
 show_help() {
-  echo "Usage: $0 ask <format> <your question>"
-  echo "Formats:"
-  echo "  -prg  : One paragraph."
-  echo "  -blp  : Bullet points."
-  echo "  -cod  : Code only, no comments."
-  echo "  -shs  : One short sentence."
-  echo "  -exa  : Provide an example."
-  echo "  -exp  : Detailed explanation."
-  echo "  -sum  : Concise summary (2–3 sentences)."
-  echo "  -qna  : Question and answer format."
+  echo -e "${CYAN}Gemini CLI Helper Script${RESET}"
+  echo "Usage: $0 ask [format] <your question>"
+  echo
+  echo "Formats (default is -shs):"
+  echo "  -prg  : Answer in a single paragraph."
+  echo "  -blp  : Answer as a list of bullet points."
+  echo "  -cod  : Provide code only, without comments or explanation."
+  echo "  -shs  : Answer in one short, concise sentence."
+  echo "  -exa  : Provide a clear example to illustrate the answer."
+  echo "  -exp  : Provide a detailed and thorough explanation."
+  echo "  -sum  : Provide a concise summary in 2–3 sentences."
+  echo "  -qna  : Answer in a question-and-answer format."
+  echo
   echo "Example: $0 ask -prg \"What are the benefits of exercise?\""
   echo "Ensure GEMINI_API_KEY is set and gemini-cli is installed."
   exit 0
 }
 
-if [[ "$1" == "ask --help" || "$1" == "ask -h" ]]; then
+if [[ "$1" == "ask" && ("$2" == "--help" || "$2" == "-h") ]]; then
   show_help
 fi
 
 if [ "$1" == "ask" ]; then
-  FORMAT="-shs"
+  FORMAT="-shs" 
 
-  if [ -z "$2" ]; then
-    echo "No format specified. Using default format: -shs (one short sentence)."
-    echo "You can specify a format or use --help to see the available formats."
-  else
+  if [[ "$2" =~ ^- ]]; then
     FORMAT="$2"
     shift 2
+  else
+    shift 1
   fi
 
   if [ -z "$1" ]; then
     echo "Error: No question provided."
-    echo "Usage: $0 ask <format> <your question>"
+    echo "Usage: $0 ask [format] <your question>"
     exit 1
   fi
 
@@ -57,32 +59,32 @@ if [ "$1" == "ask" ]; then
 
   case "$FORMAT" in
     -prg)
-      PROMPT_SUFFIX="Please answer in one paragraph."
+      PROMPT_SUFFIX="Please provide a clear and concise answer in one paragraph, in plain text."
       ;;
     -blp)
-      PROMPT_SUFFIX="Please answer in bullet points."
+      PROMPT_SUFFIX="Please list the key points as bullet points, using plain text without symbols."
       ;;
     -cod)
-      PROMPT_SUFFIX="Please provide code only, without any comments or explanation."
+      PROMPT_SUFFIX="Please provide only the code necessary to answer the question, without any formatting or comments."
       ;;
     -shs)
-      PROMPT_SUFFIX="Please answer in one short sentence."
+      PROMPT_SUFFIX="Please provide a concise answer in one short sentence, in plain text."
       ;;
     -exa)
-      PROMPT_SUFFIX="Please provide an example to illustrate the answer."
+      PROMPT_SUFFIX="Please provide a specific example to illustrate the answer clearly, in plain text."
       ;;
     -exp)
-      PROMPT_SUFFIX="Please provide a detailed explanation."
+      PROMPT_SUFFIX="Please provide a detailed and thorough explanation of the topic, in plain text."
       ;;
     -sum)
-      PROMPT_SUFFIX="Please provide a concise summary in 2 or 3 sentences."
+      PROMPT_SUFFIX="Please summarize the answer in 2–3 concise sentences, in plain text."
       ;;
     -qna)
-      PROMPT_SUFFIX="Please answer in a question-and-answer format."
+      PROMPT_SUFFIX="Please format the answer as a question-and-answer dialogue, in plain text."
       ;;
     *)
       echo "Warning: Unknown format '$FORMAT'. Using default format: -shs."
-      PROMPT_SUFFIX="Please answer in one short sentence."
+      PROMPT_SUFFIX="Please provide a concise answer in one short sentence, in plain text."
       ;;
   esac
 
@@ -90,13 +92,14 @@ if [ "$1" == "ask" ]; then
   RESPONSE=$(gemini-cli prompt "$FULL_PROMPT" 2>&1)
 
   if [ $? -eq 0 ]; then
-    echo -e "\n${CYAN}✨ Gemini >> ${YELLOW}$RESPONSE${RESET}\n"
+    PLAIN_RESPONSE=$(echo "$RESPONSE" | sed -E 's/[*`]+//g')
+    echo -e "\n${CYAN}✨ Gemini >> ${YELLOW}$PLAIN_RESPONSE${RESET}\n"
   else
     echo -e "Error: Unable to process the request.\nResponse: $RESPONSE"
   fi
 else
   echo "Error: Invalid command."
-  echo "Usage: $0 ask <format> <your question>"
+  echo "Usage: $0 ask [format] <your question>"
   echo "Use ask --help for more details."
   exit 1
 fi
